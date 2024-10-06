@@ -9,3 +9,7 @@ class ChatController:
     async def ask(self, question: str):
         openai_service = OpenaiService()
         return StreamingResponse(openai_service.call_openai_with_streaming(question))
+    
+    async def ask_image(self, image_base64: str, question: str):
+        openai_service = OpenaiService()
+        return StreamingResponse(openai_service.read_image(image_base64, question))
