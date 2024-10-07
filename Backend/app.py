@@ -1,3 +1,4 @@
+import io
 from typing import Annotated
 from fastapi import FastAPI, File, Form
 from pydantic import BaseModel
@@ -37,6 +38,14 @@ async def upload_image_and_question(image: UploadFile, message: str = Form(...))
     image_base64 = base64.b64encode(image_data).decode('utf-8')
     chat_controller = ChatController()
     return await chat_controller.ask_image(image_base64=image_base64, question=message)
+
+@app.post("/api/chat/upload_audio")
+async def ask_question_adio(audio: UploadFile):
+    audio_data = await audio.read()
+    buffer = io.BytesIO(audio_data)
+    buffer.name = "file.webm" 
+    chat_controller = ChatController()
+    return await chat_controller.ask_audio(buffer)
 
 
 if __name__ == "__main__":

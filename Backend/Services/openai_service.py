@@ -73,3 +73,11 @@ class OpenaiService:
                 answer += chunk_message
 
         print(answer)
+
+    async def read_audio(self, audio):
+        transcription = self.client.audio.transcriptions.create(
+            model="whisper-1", 
+            file=audio,
+        )
+        print(transcription.text)
+        return self.call_openai_with_streaming(transcription.text)

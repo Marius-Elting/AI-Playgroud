@@ -1,15 +1,24 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import axios from "axios";
+
+
 
 interface Message {
     content: string;
     role: 'user' | 'assistant';
 }
+let gumStream: any = null;
+let recorder: any = null;
+let audioContext: any = null;
 
 const Chat = () => {
     const [userInput, setUserInput] = useState('');
     const [imageInput, setImageInput] = useState<File | null>(null);
     const [output, setOutput] = useState<Message[]>([]);
+    const [chunks, setChunks] = useState<any[]>([]);
+    const [recorderState, setRecorderState] = useState(null);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         setUserInput(event.target.value);
@@ -21,7 +30,7 @@ const Chat = () => {
         }
     };
 
-    const handleSendClick = async () => {
+    const handleSendMessage = async () => {
         const userMessage: Message = {
             content: userInput,
             role: 'user',
@@ -51,7 +60,7 @@ const Chat = () => {
                     role: 'assistant',
                 };
                 setOutput((prevOutput) => [...prevOutput, assistantMessage]);
-                
+
                 while (!done) {
                     const { value, done: readerDone } = await reader.read();
                     const chunk = decoder.decode(value);
@@ -79,6 +88,62 @@ const Chat = () => {
         }
     };
 
+    const startRecording = () => {
+        let constraints = {
+            audio: true,
+            video: false
+        }
+
+        audioContext = new window.AudioContext();
+        console.log("sample rate: " + audioContext.sampleRate);
+
+        navigator.mediaDevices
+            .getUserMedia(constraints)
+            .then(function (stream) {
+                console.log("initializing Recorder.js ...");
+
+                gumStream = stream;
+
+                const input: any = audioContext.createMediaStreamSource(stream);
+
+                recorder = new window.MediaRecorder(stream, {
+                    mimeType: 'audio/webm'
+                })
+                setRecorderState(recorder);
+                recorder.start();
+                console.log(recorder.state)
+
+                console.log("Recording started");
+            }).catch(function (err) {
+                console.log("error: " + err);
+                //enable the record button if getUserMedia() fails
+        });
+
+    }
+
+
+
+    // ...
+    const stopRecording = () => {
+        console.log("stopButton clicked");
+        if(recorderState == null) return;
+        recorderState.stop()
+        recorder.ondataavailable = (e) => {
+            console.log("data available", e.data);
+            const blob = e.data
+            const audioOutput = document.querySelector('audio')!;
+            audioOutput.src = window.URL.createObjectURL(blob);
+            const data: any = new FormData();
+            console.log(blob.type)
+            data.append('audio', blob);
+    
+            const config = {
+                headers: {'content-type': 'multipart/form-data'}
+            }
+            axios.post('http://localhost:8000/api/chat/upload_audio', data, config);
+        };
+    }
+
     return (
         <div>
             <div>
@@ -92,7 +157,13 @@ const Chat = () => {
             </div>
             <input type="text" value={userInput} onChange={handleInputChange} />
             <input type="file" onChange={handleImageChange} />
-            <button onClick={handleSendClick}>Send</button>
+            <button onClick={handleSendMessage}>Send</button>
+            <button onClick={startRecording} type="button">Start</button>
+            <button onClick={stopRecording} type="button">Stop</button>
+            <audio controls>
+                <source src="audio.ogg" type="audio/mp3" />
+                Your browser does not support the audio element.
+            </audio>
         </div>
     );
 };
