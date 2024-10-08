@@ -1,8 +1,8 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import axios from "axios";
-
+import styles from "./page.module.scss";
 
 
 interface Message {
@@ -17,7 +17,6 @@ const Chat = () => {
     const [userInput, setUserInput] = useState('');
     const [imageInput, setImageInput] = useState<File | null>(null);
     const [output, setOutput] = useState<Message[]>([]);
-    const [chunks, setChunks] = useState<any[]>([]);
     const [recorderState, setRecorderState] = useState(null);
 
     const handleInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -85,6 +84,41 @@ const Chat = () => {
                 console.error(error);
                 // Handle the error
             }
+        }else {
+            const response = await fetch('http://localhost:8000/api/chat/ask', {
+                method: 'POST',
+                body: JSON.stringify({ question: userInput }),
+            });
+            if(!response.ok|| !response.body) throw new Error('Network response was not ok');
+            const reader = response.body.getReader();
+            const decoder = new TextDecoder();
+
+            let result = '';
+            let done = false;
+            const assistantMessage: Message = {
+                content: '',
+                role: 'assistant',
+            };
+            setOutput((prevOutput) => [...prevOutput, assistantMessage]);
+
+            while (!done) {
+                const { value, done: readerDone } = await reader.read();
+                const chunk = decoder.decode(value);
+                result += chunk;
+                setOutput((prevOutput) => {
+                    const updatedOutput = [...prevOutput];
+                    const lastMessageIndex = updatedOutput.length - 1;
+                    updatedOutput[lastMessageIndex] = { content: result, role: 'assistant' };
+                    return updatedOutput;
+                });
+
+                if (readerDone) {
+                    done = true;
+                }
+            }
+
+            const data = JSON.parse(result);
+            console.log(data)
         }
     };
 
@@ -128,11 +162,11 @@ const Chat = () => {
         console.log("stopButton clicked");
         if(recorderState == null) return;
         recorderState.stop()
-        recorder.ondataavailable = (e) => {
+        recorderState.ondataavailable = (e) => {
             console.log("data available", e.data);
             const blob = e.data
-            const audioOutput = document.querySelector('audio')!;
-            audioOutput.src = window.URL.createObjectURL(blob);
+           /*  const audioOutput = document.querySelector('audio')!;
+            audioOutput.src = window.URL.createObjectURL(blob); */
             const data: any = new FormData();
             console.log(blob.type)
             data.append('audio', blob);
@@ -145,25 +179,29 @@ const Chat = () => {
     }
 
     return (
-        <div>
-            <div>
-                Output:
+        <div className={styles.chat_wrapper}>
+            <div className={styles.chat_output}>
                 {output.map((message, index) => (
-                    <div key={index}>
-                        {message.role === 'user' ? 'User: ' : 'Assistant: '}
+                    <div key={index} className={message.role == "user" ? styles.user_message : styles.assistant_message}>
                         {message.content}
                     </div>
                 ))}
             </div>
-            <input type="text" value={userInput} onChange={handleInputChange} />
-            <input type="file" onChange={handleImageChange} />
-            <button onClick={handleSendMessage}>Send</button>
-            <button onClick={startRecording} type="button">Start</button>
-            <button onClick={stopRecording} type="button">Stop</button>
-            <audio controls>
-                <source src="audio.ogg" type="audio/mp3" />
-                Your browser does not support the audio element.
-            </audio>
+            <div className={styles.chat_input}>
+
+                <input type="text" value={userInput} onChange={handleInputChange} />
+                
+                <label htmlFor="fileInput">Upload</label>
+                <input type="file" id="fileInput" onChange={handleImageChange} />
+                <button onClick={handleSendMessage}>Send</button>
+                <button onClick={startRecording} type="button">Start</button>
+                <button onClick={stopRecording} type="button">Stop</button>
+                {/* <audio controls>
+                    <source src="audio.ogg" type="audio/mp3" />
+                    Your browser does not support the audio element.
+                </audio> */}
+            </div>
+
         </div>
     );
 };
