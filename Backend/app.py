@@ -28,7 +28,7 @@ class Item(BaseModel):
     question: str
 
 @app.post("/api/chat/ask")
-async def ask(question):
+async def ask(question:str =  Form(...)):
     chat_controller = ChatController()
     return await chat_controller.ask(question)
 

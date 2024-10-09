@@ -85,9 +85,11 @@ const Chat = () => {
                 // Handle the error
             }
         }else {
+            const formData = new FormData()
+            formData.append('question', userInput)
             const response = await fetch('http://localhost:8000/api/chat/ask', {
                 method: 'POST',
-                body: JSON.stringify({ question: userInput }),
+                body: formData,
             });
             if(!response.ok|| !response.body) throw new Error('Network response was not ok');
             const reader = response.body.getReader();
