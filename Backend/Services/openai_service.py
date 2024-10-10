@@ -65,7 +65,7 @@ class OpenaiService:
                 answer += chunk_message
 
 
-    async def read_audio(self, audio):
+    def read_audio(self, audio):
         transcription = self.client.audio.transcriptions.create(
             model="whisper-1", 
             file=audio,

@@ -45,7 +45,7 @@ async def ask_question_adio(audio: UploadFile):
     buffer = io.BytesIO(audio_data)
     buffer.name = "file.webm" 
     chat_controller = ChatController()
-    return await chat_controller.ask_audio(buffer)
+    return chat_controller.ask_audio(buffer)
 
 
 if __name__ == "__main__":

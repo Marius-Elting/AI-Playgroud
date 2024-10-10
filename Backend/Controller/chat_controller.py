@@ -14,6 +14,6 @@ class ChatController:
         openai_service = OpenaiService()
         return StreamingResponse(openai_service.read_image(image_base64, question))
     
-    async def ask_audio(self, audio):
+    def ask_audio(self, audio):
         openai_service = OpenaiService()
         return StreamingResponse(openai_service.read_audio(audio))
