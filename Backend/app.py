@@ -48,5 +48,10 @@ async def ask_question_adio(audio: UploadFile):
     return chat_controller.ask_audio(buffer)
 
 
+@app.post("/api/chat/upload")
+async def upload_file(file: UploadFile = File(...)):
+    return {"filename": file.filename}
+
+
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
