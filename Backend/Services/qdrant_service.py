@@ -26,9 +26,9 @@ class QdrantService:
             )
         print(f"Connected to Qdrant and created collection '{collection_name}'")
 
-    def insert_vectors(self, content):
+    def insert_vectors(self, content, collection_name: str):
         embeddings = self.openai_service.create_embedding(content)
-        self.create_collection("exceldocuments")
+        self.create_collection(collection_name)
         points = [
             PointStruct(
                 id=str(uuid.uuid4()),
@@ -37,7 +37,7 @@ class QdrantService:
             )
             for idx, (data, text) in enumerate(zip(embeddings.data, content))
         ]
-        self.client.upsert("exceldocuments", points)
+        self.client.upsert(collection_name, points)
         print(f"Inserted {len(points)} vectors into collection")
 
     def search_vectors(self, collection_name: str, query: str):
@@ -45,6 +45,7 @@ class QdrantService:
         vector_results = self.client.search(
             collection_name=collection_name,
             query_vector=embeddings,
+            limit=5
         )
         return vector_results
 

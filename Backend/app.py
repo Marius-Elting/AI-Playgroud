@@ -34,9 +34,9 @@ async def ask(question:str =  Form(...)):
 
 
 @app.post("/api/chat/ask_document")
-async def ask(question:str =  Form(...)):
+async def ask(question:str =  Form(...), collection: str = Form(...)):
     chat_controller = ChatController()
-    return await chat_controller.ask_data(question)
+    return await chat_controller.ask_data(question, collection)
 
 @app.post("/api/chat/ask_image")
 async def upload_image_and_question(image: UploadFile, message: str = Form(...)):
@@ -57,7 +57,12 @@ async def ask_question_adio(audio: UploadFile):
 @app.post("/api/chat/upload")
 async def upload_file(file: UploadFile = File(...)):
     document_controller = DocumentController()
-    document_controller.ingest_document(file)
+    if str(file.filename).endswith(".xls") or str(file.filename).endswith(".xlsx"):
+        return document_controller.ingest_excel(file)
+    elif str(file.filename).endswith(".pdf"):
+        file_data = await file.read()
+        return document_controller.ingest_pdf(file_data)
+        return document_controller.ingest_pdf(file)
     return {"filename": file.filename}
 
 

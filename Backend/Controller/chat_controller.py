@@ -12,10 +12,9 @@ class ChatController:
     async def ask(self, question: str):
         return StreamingResponse(self.openai_service.call_openai_with_streaming(question))
     
-    async def ask_data(self, question: str):
+    async def ask_data(self, question: str, collection):
         data = "data"
-        # TODO update this to make collection name dynamic selected by user
-        vector_results = self.qdrant_service.search_vectors("exceldocuments", question)
+        vector_results = self.qdrant_service.search_vectors(collection, question)
         llm_query = self.openai_service.build_llm_document_query(question, vector_results)
         return StreamingResponse(self.openai_service.call_openai_with_streaming(llm_query, data))
     
