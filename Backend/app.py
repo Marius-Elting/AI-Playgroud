@@ -4,7 +4,7 @@ from fastapi import FastAPI, File, Form
 from pydantic import BaseModel
 import uvicorn
 
-from Controller import ChatController
+from Controller import ChatController, DocumentController
 from fastapi import UploadFile
 import base64
 from fastapi.middleware.cors import CORSMiddleware
@@ -50,6 +50,8 @@ async def ask_question_adio(audio: UploadFile):
 
 @app.post("/api/chat/upload")
 async def upload_file(file: UploadFile = File(...)):
+    document_controller = DocumentController()
+    document_controller.ingest_document(file)
     return {"filename": file.filename}
 
 

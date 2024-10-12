@@ -1,32 +1,43 @@
 from qdrant_client import QdrantClient
-from qdrant_client.http.models import VectorParams
+from qdrant_client.http.models import VectorParams, Distance
+from qdrant_client.models import PointStruct
+from Services.openai_service import OpenaiService
 
-# Connect to the Qdrant instance
 
-
+# docker run -d --name qdrant -p 6333:6333 qdrant/qdrant
 class QdrantService:
 
     def __init__(self) -> None:
-
+        self.openai_service = OpenaiService()
         self.client = QdrantClient("http://localhost:6333")
         pass
     
-    def create_collection(self, collection_name: str, vector_size: int = 128, distance: str = "Cosine"):
-        self.client.recreate_collection(
+    def create_collection(self, collection_name: str):
+        if self.client.collection_exists(collection_name=collection_name) == True:
+            print(f"Collection '{collection_name}' already exists")
+            return
+        self.client.create_collection(
             collection_name=collection_name,
-            vectors_config={
-                "default": VectorParams(size=vector_size, distance=distance)
-            }
+            vectors_config=VectorParams(
+                size=1536,
+                distance=Distance.COSINE,
+            ),
         )
         print(f"Connected to Qdrant and created collection '{collection_name}'")
 
-    def insert_vectors(self, collection_name: str, vectors: list, ids: list):
-        self.client.insert_vectors(
-            collection_name=collection_name,
-            vectors=vectors,
-            ids=ids
-        )
-        print(f"Inserted {len(vectors)} vectors into collection '{collection_name}'")
+    def insert_vectors(self, content):
+        embeddings = self.openai_service.create_embedding(content)
+        self.create_collection("exceldocuments")
+        points = [
+            PointStruct(
+                id=idx,
+                vector=data.embedding,
+                payload={"text": text},
+            )
+            for idx, (data, text) in enumerate(zip(embeddings.data, content))
+        ]
+        self.client.upsert("exceldocuments", points)
+        print(f"Inserted {len(points)} vectors into collection")
 
     def search_vectors(self, collection_name: str, query_vector: list, top: int = 5):
         search_result = self.client.search(
@@ -39,5 +50,3 @@ class QdrantService:
     def delete_collection(self, collection_name: str):
         self.client.delete_collection(collection_name=collection_name)
         print(f"Deleted collection '{collection_name}'")
-
-

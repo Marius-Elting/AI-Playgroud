@@ -72,3 +72,9 @@ class OpenaiService:
         )
         print(transcription.text)
         return self.call_openai_with_streaming(transcription.text)
+    
+
+    def create_embedding(self, text):
+        embedding_model = "text-embedding-3-small"
+        result = self.client.embeddings.create(input=text, model=embedding_model)
+        return result
