@@ -6,7 +6,6 @@ class ExcelIngestion:
 
     def extract_tables(self, file):
         wb = load_workbook(file.file)
-        # TODO check this and how I can get the sheet names
         ws = wb["SalesOrders"]
         for ws in wb:
             table_contents = []

@@ -32,6 +32,12 @@ async def ask(question:str =  Form(...)):
     chat_controller = ChatController()
     return await chat_controller.ask(question)
 
+
+@app.post("/api/chat/ask_document")
+async def ask(question:str =  Form(...)):
+    chat_controller = ChatController()
+    return await chat_controller.ask_data(question)
+
 @app.post("/api/chat/ask_image")
 async def upload_image_and_question(image: UploadFile, message: str = Form(...)):
     image_data = await image.read() 

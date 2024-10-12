@@ -1,3 +1,4 @@
+import uuid
 from qdrant_client import QdrantClient
 from qdrant_client.http.models import VectorParams, Distance
 from qdrant_client.models import PointStruct
@@ -15,14 +16,14 @@ class QdrantService:
     def create_collection(self, collection_name: str):
         if self.client.collection_exists(collection_name=collection_name) == True:
             print(f"Collection '{collection_name}' already exists")
-            return
-        self.client.create_collection(
-            collection_name=collection_name,
-            vectors_config=VectorParams(
-                size=1536,
-                distance=Distance.COSINE,
-            ),
-        )
+        else:
+            self.client.create_collection(
+                collection_name=collection_name,
+                vectors_config=VectorParams(
+                    size=1536,
+                    distance=Distance.COSINE,
+                ),
+            )
         print(f"Connected to Qdrant and created collection '{collection_name}'")
 
     def insert_vectors(self, content):
@@ -30,7 +31,7 @@ class QdrantService:
         self.create_collection("exceldocuments")
         points = [
             PointStruct(
-                id=idx,
+                id=str(uuid.uuid4()),
                 vector=data.embedding,
                 payload={"text": text},
             )
@@ -39,13 +40,13 @@ class QdrantService:
         self.client.upsert("exceldocuments", points)
         print(f"Inserted {len(points)} vectors into collection")
 
-    def search_vectors(self, collection_name: str, query_vector: list, top: int = 5):
-        search_result = self.client.search(
+    def search_vectors(self, collection_name: str, query: str):
+        embeddings = self.openai_service.create_embedding(query).data[0].embedding
+        vector_results = self.client.search(
             collection_name=collection_name,
-            query_vector=query_vector,
-            top=top
+            query_vector=embeddings,
         )
-        return search_result
+        return vector_results
 
     def delete_collection(self, collection_name: str):
         self.client.delete_collection(collection_name=collection_name)

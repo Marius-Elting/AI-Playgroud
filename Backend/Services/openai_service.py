@@ -10,7 +10,7 @@ class OpenaiService:
     def __init__(self):
         self.client = OpenAI()
     
-    async def call_openai_with_streaming(self, question):
+    async def call_openai_with_streaming(self, question, data=None):
         completion = self.client.chat.completions.create(
                 messages= [
                     {"role": "system", "content":"You are a helpful assistant that can help people with anything"},
@@ -78,3 +78,11 @@ class OpenaiService:
         embedding_model = "text-embedding-3-small"
         result = self.client.embeddings.create(input=text, model=embedding_model)
         return result
+
+
+    def build_llm_document_query(self, query: str, vector_result: list):
+        llm_query = f"Please answer the following question: {query} using the provided information: "
+        for result in vector_result:
+            llm_query += f"{result.payload['text']} "
+
+        return llm_query

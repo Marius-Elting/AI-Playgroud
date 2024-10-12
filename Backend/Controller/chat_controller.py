@@ -1,19 +1,28 @@
 from fastapi.responses import StreamingResponse
+from Services.qdrant_service import QdrantService
 from Services import OpenaiService 
 
 class ChatController:
+    openai_service: OpenaiService
 
     def __init__(self):
-        print("init ChatController")
+        self.openai_service = OpenaiService()
+        self.qdrant_service = QdrantService()
 
     async def ask(self, question: str):
-        openai_service = OpenaiService()
-        return StreamingResponse(openai_service.call_openai_with_streaming(question))
+        return StreamingResponse(self.openai_service.call_openai_with_streaming(question))
+    
+    async def ask_data(self, question: str):
+        data = "data"
+        # TODO update this to make collection name dynamic selected by user
+        vector_results = self.qdrant_service.search_vectors("exceldocuments", question)
+        llm_query = self.openai_service.build_llm_document_query(question, vector_results)
+        return StreamingResponse(self.openai_service.call_openai_with_streaming(llm_query, data))
     
     async def ask_image(self, image_base64: str, question: str):
-        openai_service = OpenaiService()
-        return StreamingResponse(openai_service.read_image(image_base64, question))
+        return StreamingResponse(self.openai_service.read_image(image_base64, question))
     
-    def ask_audio(self, audio):
-        openai_service = OpenaiService()
-        return StreamingResponse(openai_service.read_audio(audio))
+    def ask_audio(self, audio) -> StreamingResponse:
+        return StreamingResponse(self.openai_service.read_audio(audio))
+    
+
