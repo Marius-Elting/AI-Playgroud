@@ -1,9 +1,12 @@
+from csv import excel
 import io
+import json
 from typing import Annotated
 from fastapi import FastAPI, File, Form
 from pydantic import BaseModel
 import uvicorn
 
+from Ingestion.export_xls import ExcelExporter
 from Controller import ChatController, DocumentController
 from fastapi import UploadFile
 import base64
@@ -62,9 +65,15 @@ async def upload_file(file: UploadFile = File(...)):
     elif str(file.filename).endswith(".pdf"):
         file_data = await file.read()
         return document_controller.ingest_pdf(file_data)
-        return document_controller.ingest_pdf(file)
     return {"filename": file.filename}
 
+
+@app.post('/api/chat/get_excel')
+def get_data(history: list = Form(...)):
+    excel_exporter = ExcelExporter()
+    chat_controller = ChatController()
+    json_data = chat_controller.summarize_json(json.loads(history[0]))
+    return excel_exporter.export_data_to_excel(json_data)
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

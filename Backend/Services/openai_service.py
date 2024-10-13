@@ -10,9 +10,10 @@ class OpenaiService:
     def __init__(self):
         self.client = OpenAI()
     
-    async def call_openai_with_streaming(self, question, data=None):
+    async def call_openai_with_streaming(self, question, data=None, history: list = []):
         completion = self.client.chat.completions.create(
                 messages= [
+                    *history,
                     {"role": "system", "content":"You are a helpful assistant that can help people with anything"},
                     {"role": "user", "content": question}
                 ],
@@ -30,6 +31,20 @@ class OpenaiService:
                 yield chunk_message 
                 answer += chunk_message
         print(answer)
+
+    def call_openai_without_streaming(self, question, data=None, history: list = []):
+        completion = self.client.chat.completions.create(
+                messages= [
+                    *history,
+                    {"role": "system", "content":"You are a helpful assistant that can help people with anything"},
+                    {"role": "user", "content": question}
+                ],
+                model="gpt-3.5-turbo",
+                stream=False
+            )
+        if completion.choices[0].message.content == None:
+            return ""
+        return completion.choices[0].message.content
 
 
     async def read_image(self, base64_image, question):
