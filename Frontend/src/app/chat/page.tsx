@@ -1,20 +1,20 @@
-/* eslint-disable @typescript-eslint/no-explicit-any */
 "use client"
 import React, { useState } from 'react';
 import styles from "./page.module.scss";
 
 
-interface Message {
+interface IMessage {
     content: string;
     role: 'user' | 'assistant';
     type: 'text' | 'image' | 'audio';
-    audioFile?: any;
+    audioFile?: Blob;
+    imageFile?: File;
 }
 
 const Chat = () => {
     const [userInput, setUserInput] = useState('');
     const [imageInput, setImageInput] = useState<File | null>(null);
-    const [history, setHistory] = useState<Message[]>([]);
+    const [history, setHistory] = useState<IMessage[]>([]);
     const [recorderState, setRecorderState] = useState<MediaRecorder>();
     const [loading, setLoading] = useState(false);
 
@@ -55,16 +55,18 @@ const Chat = () => {
     };
 
     const handleSendMessage = async () => {
-        const userMessage: Message = {
-            content: userInput,
-            role: 'user',
-            type: imageInput ? 'image' : 'text',
-        };
 
-        setHistory((prevHistory) => [...prevHistory, userMessage]);
+
         setUserInput('');
-
         if (imageInput) {
+            const userMessage: IMessage = {
+                content: userInput,
+                role: 'user',
+                type:'image',
+                imageFile: imageInput,
+            };
+            setHistory((prevHistory) => [...prevHistory, userMessage]);
+
             const formData = new FormData();
             formData.append('image', imageInput);
             formData.append('message', userInput);
@@ -80,7 +82,7 @@ const Chat = () => {
 
                 let result = '';
                 let done = false;
-                const assistantMessage: Message = {
+                const assistantMessage: IMessage = {
                     content: '',
                     role: 'assistant',
                     type: 'text',
@@ -108,6 +110,12 @@ const Chat = () => {
                 console.error(error);
             }
         } else {
+            const userMessage: IMessage = {
+                content: userInput,
+                role: 'user',
+                type: 'text',
+            };
+            setHistory((prevHistory) => [...prevHistory, userMessage]);
             const formData = new FormData()
             formData.append('question', userInput)
             const response = await fetch('http://localhost:8000/api/chat/ask', {
@@ -120,7 +128,7 @@ const Chat = () => {
 
             let result = '';
             let done = false;
-            const assistantMessage: Message = {
+            const assistantMessage: IMessage = {
                 content: '',
                 role: 'assistant',
                 type: 'text',
@@ -177,16 +185,14 @@ const Chat = () => {
         recorderState.ondataavailable = async (e) => {
             console.log("data available", e.data);
             const blob = e.data
-            /*  const audioHistory = document.querySelector('audio')!;
-             audioHistory.src = window.URL.createObjectURL(blob); */
-            const data: any = new FormData();
+            const data: FormData = new FormData();
             console.log(blob.type)
             data.append('audio', blob);
-            const userMessage: Message = {
+            const userMessage: IMessage = {
                 content: '',
                 role: 'user',
                 type: 'audio',
-                audioFile: window.URL.createObjectURL(blob),
+                audioFile: blob
             };
             setHistory((prevHistory) => [...prevHistory, userMessage]);
 
@@ -201,7 +207,7 @@ const Chat = () => {
 
             let result = '';
             let done = false;
-            const assistantMessage: Message = {
+            const assistantMessage: IMessage = {
                 content: '',
                 role: 'assistant',
                 type: 'text',
@@ -229,7 +235,7 @@ const Chat = () => {
     return (
         <div className={styles.chat_wrapper}>
             <div className={styles.chat_output}>
-                {history.map((message, index) => (
+                {history.map((message: IMessage, index: number) => (
                     message.type == "text" ? (
                         <div key={index} className={message.role == "user" ? styles.user_message : styles.assistant_message}>
                             {message.content}
@@ -237,15 +243,15 @@ const Chat = () => {
                     ) : (message.type == "image") ? (
 
                         <div key={index} className={message.role == "user" ? styles.user_message : styles.assistant_message}>
-                            {/*  <img src={URL.createObjectURL(imageInput)} alt="user_image" /> */}
+                            {message.imageFile && <img src={URL.createObjectURL(message.imageFile)} alt="user_image" />}
                             {message.content}
                         </div>
                     ) : (
                         <div key={index} className={message.role == "user" ? styles.user_message : styles.assistant_message}>
-                            <audio controls>
-                                <source src={message.audioFile} type="audio/mp3" />
+                            {message.audioFile && <audio controls>
+                                <source src={window.URL.createObjectURL(message.audioFile)} type="audio/mp3" />
                                 Your browser does not support the audio element.
-                            </audio>
+                            </audio>}
                         </div>
                     )
                 ))}
