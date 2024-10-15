@@ -1,6 +1,7 @@
 "use client"
 import React, { useState } from 'react';
 import styles from "./page.module.scss";
+import Head from 'next/head';
 
 
 interface IMessage {
@@ -25,7 +26,7 @@ const Chat = () => {
             data.append('history', JSON.stringify(history));
             const response = await fetch('http://127.0.0.1:8000/api/chat/get_excel', {
                 "method": "POST",
-                "body": data,         
+                "body": data,
             });
             if (!response.ok) {
                 throw new Error('Network response was not ok');
@@ -48,6 +49,12 @@ const Chat = () => {
         setUserInput(event.target.value);
     };
 
+    const onKeyPress = (event: React.KeyboardEvent<HTMLInputElement>) => {
+        if (event.key === 'Enter') {
+            handleSendMessage();
+        }
+    }
+
     const handleImageChange = (event: React.ChangeEvent<HTMLInputElement>) => {
         if (event.target.files && event.target.files.length > 0) {
             setImageInput(event.target.files[0]);
@@ -62,7 +69,7 @@ const Chat = () => {
             const userMessage: IMessage = {
                 content: userInput,
                 role: 'user',
-                type:'image',
+                type: 'image',
                 imageFile: imageInput,
             };
             setHistory((prevHistory) => [...prevHistory, userMessage]);
@@ -233,48 +240,53 @@ const Chat = () => {
     }
 
     return (
-        <div className={styles.chat_wrapper}>
-            <div className={styles.chat_output}>
-                {history.map((message: IMessage, index: number) => (
-                    message.type == "text" ? (
-                        <div key={index} className={message.role == "user" ? styles.user_message : styles.assistant_message}>
-                            {message.content}
-                        </div>
-                    ) : (message.type == "image") ? (
+        <>
+            <Head>
+                <title>AI - Playground - Chat</title>
+            </Head>
+            <div className={styles.chat_wrapper}>
+                <div className={styles.chat_output}>
+                    {history.map((message: IMessage, index: number) => (
+                        message.type == "text" ? (
+                            <div key={index} className={message.role == "user" ? styles.user_message : styles.assistant_message}>
+                                {message.content}
+                            </div>
+                        ) : (message.type == "image") ? (
 
-                        <div key={index} className={message.role == "user" ? styles.user_message : styles.assistant_message}>
-                            {message.imageFile && <img src={URL.createObjectURL(message.imageFile)} alt="user_image" />}
-                            {message.content}
-                        </div>
-                    ) : (
-                        <div key={index} className={message.role == "user" ? styles.user_message : styles.assistant_message}>
-                            {message.audioFile && <audio controls>
-                                <source src={window.URL.createObjectURL(message.audioFile)} type="audio/mp3" />
-                                Your browser does not support the audio element.
-                            </audio>}
-                        </div>
-                    )
-                ))}
-            </div>
-            <div className={styles.chat_input}>
-
-                <input type="text" value={userInput} onChange={handleInputChange} />
-
-                <label htmlFor="fileInput">Upload</label>
-                <input type="file" id="fileInput" onChange={handleImageChange} />
-                <button onClick={handleSendMessage}>Send</button>
-                <div>
-                    <button onClick={startRecording} type="button">Start</button>
-                    <button onClick={stopRecording} type="button">Stop</button>
+                            <div key={index} className={message.role == "user" ? styles.user_message : styles.assistant_message}>
+                                {message.imageFile && <img src={URL.createObjectURL(message.imageFile)} alt="user_image" />}
+                                {message.content}
+                            </div>
+                        ) : (
+                            <div key={index} className={message.role == "user" ? styles.user_message : styles.assistant_message}>
+                                {message.audioFile && <audio controls>
+                                    <source src={window.URL.createObjectURL(message.audioFile)} type="audio/mp3" />
+                                    Your browser does not support the audio element.
+                                </audio>}
+                            </div>
+                        )
+                    ))}
                 </div>
-                <button onClick={downloadFile} type="button" disabled={loading}>download excel</button>
-                {/* <audio controls>
+                <div className={styles.chat_input}>
+
+                    <input type="text" value={userInput} onChange={handleInputChange} onKeyDown={onKeyPress} />
+
+                    <button onClick={handleSendMessage}>Send</button>
+                    <label htmlFor="fileInput">Upload</label>
+                    <input type="file" id="fileInput" onChange={handleImageChange} />
+                    <div>
+                        <button onClick={startRecording} type="button">Start</button>
+                        <button onClick={stopRecording} type="button">Stop</button>
+                    </div>
+                    <button onClick={downloadFile} type="button" disabled={loading}>download excel</button>
+                    {/* <audio controls>
                     <source src="audio.ogg" type="audio/mp3" />
                     Your browser does not support the audio element.
                 </audio> */}
-            </div>
+                </div>
 
-        </div>
+            </div>
+        </>
     );
 };
 
