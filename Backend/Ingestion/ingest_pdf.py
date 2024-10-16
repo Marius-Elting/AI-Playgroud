@@ -1,10 +1,11 @@
+from typing import Any
 import fitz
 
 class PdfIngestion:
-    def ingest_pdf(self, document_bytes):
+    def ingest_pdf(self, document_bytes)-> list[Any]:
         
         doc = fitz.open(stream=document_bytes, filetype="pdf")
-        chunks = []
+        chunks: list[Any] = []
         for page in doc:
             text = page.get_text()
             chunks.extend(self.chunk_text(text))
@@ -12,7 +13,7 @@ class PdfIngestion:
 
     def chunk_text(self, text):
         max_chunk_size = 1500
-        chunks = []
+        chunks:list[Any] = []
         section_delimiter = "\n"  # Assuming sections are separated by two newlines
 
         while len(text) > max_chunk_size:

@@ -1,9 +1,8 @@
-from csv import excel
 import io
 import json
-from typing import Annotated
+from typing import Any
 from fastapi import FastAPI, File, Form
-from pydantic import BaseModel
+from fastapi.responses import StreamingResponse
 import uvicorn
 
 from Ingestion.export_xls import ExcelExporter
@@ -23,38 +22,31 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
-async def root():
-    return {"message": "Hello World"}
-
-class Item(BaseModel):
-    question: str
-
 @app.post("/api/chat/ask")
-async def ask(question:str =  Form(...)):
+async def ask(question:str =  Form(...)) -> StreamingResponse:
     chat_controller = ChatController()
-    return await chat_controller.ask(question)
+    return await chat_controller.ask(question=question)
 
 
 @app.post("/api/chat/ask_document")
-async def ask(question:str =  Form(...), collection: str = Form(...)):
+async def ask_document(question:str =  Form(...), collection: str = Form(...)) -> StreamingResponse:
     chat_controller = ChatController()
-    return await chat_controller.ask_data(question, collection)
+    return await chat_controller.ask_data(question=question, collection=collection)
 
 @app.post("/api/chat/ask_image")
-async def upload_image_and_question(image: UploadFile, message: str = Form(...)):
+async def upload_image_and_question(image: UploadFile, message: str = Form(...)) -> StreamingResponse:
     image_data = await image.read() 
     image_base64 = base64.b64encode(image_data).decode('utf-8')
     chat_controller = ChatController()
     return await chat_controller.ask_image(image_base64=image_base64, question=message)
 
 @app.post("/api/chat/upload_audio")
-async def ask_question_adio(audio: UploadFile):
-    audio_data = await audio.read()
-    buffer = io.BytesIO(audio_data)
+async def ask_question_adio(audio: UploadFile) -> StreamingResponse:
+    audio_data: bytes = await audio.read()
+    buffer = io.BytesIO(initial_bytes=audio_data)
     buffer.name = "file.webm" 
     chat_controller = ChatController()
-    return chat_controller.ask_audio(buffer)
+    return chat_controller.ask_audio(audio=buffer)
 
 
 @app.post("/api/chat/upload")
@@ -64,16 +56,16 @@ async def upload_file(file: UploadFile = File(...)):
         return document_controller.ingest_excel(file)
     elif str(file.filename).endswith(".pdf"):
         file_data = await file.read()
-        return document_controller.ingest_pdf(file_data)
+        return document_controller.ingest_pdf(document=file_data)
     return {"filename": file.filename}
 
 
 @app.post('/api/chat/get_excel')
-def get_data(history: list = Form(...)):
-    excel_exporter = ExcelExporter()
-    chat_controller = ChatController()
-    json_data = chat_controller.summarize_json(json.loads(history[0]))
-    return excel_exporter.export_data_to_excel(json_data)
+def get_data(history: list = Form(...)) -> StreamingResponse:
+    excel_exporter: ExcelExporter = ExcelExporter()
+    chat_controller: ChatController = ChatController()
+    json_data: list[Any] = chat_controller.summarize_json(history=json.loads(history[0]))
+    return excel_exporter.export_data_to_excel(data=json_data)
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
