@@ -67,5 +67,16 @@ def get_data(history: list = Form(...)) -> StreamingResponse:
     json_data: list[Any] = chat_controller.summarize_json(history=json.loads(history[0]))
     return excel_exporter.export_data_to_excel(data=json_data)
 
+
+
+@app.post('/api/chat/generate_image')
+def generate_image(prompt: str = Form(...)) :
+   return {"image": ChatController().generate_image(prompt=prompt)}
+
+
+
+
+
+
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)

@@ -15,6 +15,7 @@ export default function Home() {
                     <p>Here I test some OpeanAI functionalities and others.</p>
                     <ul>
                         <Link href="/chat">CHAT</Link>
+                        <Link href="/imagegeneration">IMAGEGENERATION</Link>
                     </ul>
                 </main>
             </div>

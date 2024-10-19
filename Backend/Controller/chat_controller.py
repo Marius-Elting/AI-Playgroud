@@ -33,3 +33,5 @@ class ChatController:
         json_data: list = json.loads(result)
         return json_data
 
+    def generate_image(self, prompt: str) :
+        return self.openai_service.generate_image(prompt=prompt)

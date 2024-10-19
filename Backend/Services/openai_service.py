@@ -101,3 +101,18 @@ class OpenaiService:
             llm_query += f"{result.payload['text']} "
 
         return llm_query
+
+
+    def generate_image(self, prompt: str):
+        response = self.client.images.generate(
+            model="dall-e-3",
+            prompt=prompt,
+            size="1024x1024",
+            quality="standard",
+            n=1,
+        )
+
+        image_url = response.data[0].url
+        if image_url == None:
+            return ""
+        return image_url
