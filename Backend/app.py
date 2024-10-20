@@ -1,7 +1,7 @@
 import io
 import json
 from typing import Any
-from fastapi import FastAPI, File, Form
+from fastapi import FastAPI, File, Form, WebSocket, WebSocketDisconnect
 from fastapi.responses import StreamingResponse
 import uvicorn
 
@@ -76,7 +76,58 @@ def generate_image(prompt: str = Form(...)) :
 
 
 
+@app.websocket("/ws")
+async def websocket_endpoint(websocket: WebSocket):
+    await websocket.accept()
+    x = []
+    while True:
+        data = await websocket.receive_text()
+        print(data)
+        x.append(data)
+        print(x)
+        await websocket.send_text(f"Message text was: {data}")
 
+
+class ConnectionManager:
+    def __init__(self):
+        self.active_connections: list[WebSocket] = []
+        self.chat = []
+
+    async def connect(self, websocket: WebSocket):
+        await websocket.accept()
+        self.active_connections.append(websocket)
+
+    def disconnect(self, websocket: WebSocket):
+        self.active_connections.remove(websocket)
+
+    async def send_personal_message(self, message: str, websocket: WebSocket):
+        await websocket.send_text(message)
+    
+    async def send_other_users(self, message: str, websocket: WebSocket):
+        for connection in self.active_connections:
+            if connection != websocket:
+                await connection.send_text(message)
+
+    async def broadcast(self, message: str):
+        for connection in self.active_connections:
+            await connection.send_text(message)
+
+
+manager = ConnectionManager()
+
+@app.websocket("/ws/{client_id}")
+async def websocket_endpoint_client(websocket: WebSocket, client_id: int):
+    await manager.connect(websocket)
+    try:
+        await manager.send_other_users(f"Client #{client_id} joined the chat", websocket=websocket)
+        while True:
+            data = await websocket.receive_text()
+            manager.chat.append(f"Client #{client_id} says: {data}")
+            await manager.send_personal_message(f"You wrote: {data}", websocket)
+            await manager.send_other_users(f"Client #{client_id} says: {data}", websocket=websocket)
+    except WebSocketDisconnect:
+        manager.disconnect(websocket)
+        await manager.broadcast(f"Client #{client_id} left the chat")
 
 if __name__ == "__main__":
     uvicorn.run("app:app", host="0.0.0.0", port=8000, reload=True)
