@@ -17,7 +17,7 @@ class OpenaiService:
                     {"role": "system", "content":"You are a helpful assistant that can help people with anything"},
                     {"role": "user", "content": question}
                 ],
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 stream=True
             )
         answer = ""
@@ -39,7 +39,7 @@ class OpenaiService:
                     {"role": "system", "content":"You are a helpful assistant that can help people with anything"},
                     {"role": "user", "content": question}
                 ],
-                model="gpt-3.5-turbo",
+                model="gpt-4o-mini",
                 stream=False
             )
         if completion.choices[0].message.content == None:
