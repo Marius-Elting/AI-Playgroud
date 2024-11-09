@@ -21,6 +21,7 @@ class OpenaiService:
                 stream=True
             )
         answer = ""
+        
         print(completion) 
         for chunk in completion:
             chunk_message = chunk.choices[0].delta.content 
